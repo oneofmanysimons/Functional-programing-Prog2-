@@ -1,0 +1,46 @@
+morse = ".- .-.. .-.. ..-- -.-- --- ..- .-. ..---... .- ... . ..-- .- .-. . ..--
+-... . .-.. --- -. --. ..-- - --- ..-- ..- ..."
+
+morse = ".... - - .--. ... ---... .----- .----- .-- .--
+.-- .-.-.- -.-- --- ..- - ..- -... . .-.-.- -.-.
+--- -- .----- .-- .- - -.-. .... ..--.. ...- .----.
+-.. .--.-- ..... .---- .-- ....- .-- ----. .--.--
+..... --... --. .--.-- ..... ---.. -.-. .--.--
+..... .----"
+
+  def encode_table({:node, :na, left, right}, map, path) do
+    encode_table(right, encode_table(left, map, path <> "-"), path <> ".")
+  end
+  def encode_table({:node, char, :nil, :nil}, map, path) do
+    Map.put(map, [char], path)
+  end
+  def encode_table({:node, char, left, :nil}, map, path) do
+    Map.put(encode_table(left, map, path <> "-"), [char], path)
+  end
+  def encode_table({:node, char, :nil, right}, map, path) do
+    Map.put(encode_table(right, map, path <> "."), [char], path)
+  end
+  def encode_table({:node, char, left, right}, map, path) do
+    lmap = encode_table(left, map, path <> "-")
+    rmap = encode_table(right, lmap, path <> ".")
+    Map.put(rmap, [char], path)
+  end
+  def encode_table(_, map, _) do map end
+
+  def encode(text)do
+    tree = morse()
+    table = encode_table(tree, %{}, "")
+    encode(table, String.to_charlist(text), [])
+  end
+
+  def encode(table, [head | tail], result) do
+    encode(table, tail, [Map.get(table, [head]) <> " " | result])
+  end
+  def encode(_, [], result) do
+    unpack(result, "")
+  end
+
+  def unpack([], sofar) do sofar end
+  def unpack([c | rest], sofar) do
+    unpack(rest, c <> sofar)
+  end

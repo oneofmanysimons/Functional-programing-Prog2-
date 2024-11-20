@@ -1,0 +1,109 @@
+defmodule S3 do
+  def sample() do
+    "???.### 1,1,3\r\n.??..??...?##. 1,1,3\r\n?#?#?#?#?#?#?#? 1,3,1,6\r\n????.#...#... 4,1,1\r\n"
+    <>"????.######..#####. 1,6,5\r\n?###???????? 3,2,1\r\n"
+  <> ".#.##????.??.? 1,6,1\r\n?#??#???.??.??? 3,1,1,1,1\r\n?#???????#? 2,1,5\r\n"
+  <>"##?#??#?????.??? 5,1,4,2\r\n????.?#??.# 2,1,1\r\n" <>
+  "???????##?????##???? 1,1,11,3\r\n.####??.??#??????#? 6,6,1\r\n??#..##?...?#. 2,3,2\r\n" <>
+  "..??##?#?#???#??.??. 12,1\r\n??.?#???#? 1,3,1\r\n??.#??????????#.??? 4,1,1,3,1\r\n" <>
+  "???##??.?##? 5,1,2\r\n???..???..?. 1,1,1,1\r\n.?????#?#??? 1,1,1,1\r\n"<>
+  "##???????????# 5,3,2\r\n??..????###?#?.? 1,8\r\n" <>
+  "????????#???.##?? 1,2,1,2,3\r\n????##.?#????.? 1,4,2,1,1\r\n" <>
+  "##???#.##?.#????? 2,2,3,2,3\r\n?????.????? 2,3\r\n?#?#??.##???.?#?. 3,5,2\r\n" <>
+  "?#?..?##???#?????? 1,12\r\n.??#?????????.?.#.? 11,1,1,1\r\n???????????#??????. 7,1,1,3,1\r\n" <>
+  "??????????#?????## 1,1,2,1,1,6\r\n.##?.##?????????? 2,4,1,1\r\n??#?##????? 5,1\r\n??#?##????? 5,1"
+  end
+
+  def parse() do
+    description = sample()
+    des = String.split(description,"\r\n")
+    list = rec(des)
+    lista = evaluation(list)
+  end
+
+  def rec([]) do [] end
+  def rec([h|t]) do
+    [a,b] = String.split(h," ")
+    [{:spec, String.to_charlist(a), convert(b)} | rec(t)]
+  end
+
+  def convert(string) do
+    string
+    |> String.split(",")
+    |> Enum.map(&String.to_integer/1)
+  end
+
+  def evaluation([]) do [] end
+  def evaluation([h|t]) do
+    [eval(h) | evaluation(t)]
+  end
+
+  def eval({:spec, a, b}) do
+    mem = Memory.new()
+    {_, solution} = check(a, b, mem, Memory)
+    solution
+  end
+
+
+  def counting([],[], mem, module) do {mem, 1} end
+  def counting([],_, mem, module) do {mem, 0} end
+  def counting([?.|rest],[], mem, module) do
+    check(rest, [], mem, module)
+  end
+  def counting([??|rest],[], mem, module) do
+    check(rest, [], mem, module)
+  end
+  def counting([?#|rest],[], mem, module) do
+    {mem, 0}
+  end
+  def counting(list1,list2, mem, module) do
+    [element|rest] = list1
+    [num|rest2] = list2
+    case element do
+      ?. -> check(rest,list2, mem, module)
+      ?# ->
+
+        case broken(list1,num) do
+        {:ok, back} -> check(back,rest2, mem, module)
+        false -> {mem, 0}
+      end
+      ?? -> case broken(list1,num) do
+         {:ok, back} ->
+            {mem1, num1} = check(back, rest2, mem, module)
+            {mem2, num2} = check(rest, list2, mem1, module)
+            {mem2, num1+num2}
+         false ->
+          check(rest, list2, mem, module)
+      end
+    end
+  end
+
+  def broken([],0) do {:ok,[]} end
+  def broken([], _) do false end
+  def broken(list,0) do
+    [element|rest] = list
+    case element do
+       ?#-> false
+        _ -> {:ok,rest}
+    end
+   end
+  def broken(list,length) do
+    [element|rest] = list
+    case element do
+      ?. -> false
+      ?# -> broken(rest,length-1)
+      ?? -> broken(rest,length-1)
+    end
+  end
+
+  def check(element, numbers, mem, module) do
+    case module.lookup({element,numbers}, mem) do
+      nil ->
+	      {mem, solution} = counting(element, numbers, mem, module)
+        {module.store({element,numbers}, solution, mem), solution}
+      solution ->
+	      {mem, solution}
+    end
+  end
+
+end
